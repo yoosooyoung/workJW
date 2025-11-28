@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>손수현네 house 관리 페이지</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .admin-header {
+            background: white;
+            color: #333;
+            padding: 40px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .admin-content {
+            padding: 40px;
+        }
+
+        .booking-list {
+            margin-top: 30px;
+        }
+
+        .booking-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .booking-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .booking-number {
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .booking-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 1.2em;
+        }
+
+        .add-booking-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .add-booking-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .date-input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>🔧 손수현네 house 관리 페이지</h1>
+            <p>예약 관리 및 확인</p>
+            <a href="index.html" style="color: #333; text-decoration: none; margin-top: 10px; display: inline-block; font-size: 0.9em;">← 예약 페이지로 돌아가기</a>
+        </div>
+
+        <div class="admin-content">
+            <!-- 예약 추가 섹션 -->
+            <div class="add-booking-section">
+                <h2>예약 추가 (테스트용)</h2>
+                <div class="date-input-group">
+                    <div class="form-group">
+                        <label for="addCheckin">체크인 날짜</label>
+                        <input type="date" id="addCheckin" class="form-group input">
+                    </div>
+                    <div class="form-group">
+                        <label for="addCheckout">체크아웃 날짜</label>
+                        <input type="date" id="addCheckout" class="form-group input">
+                    </div>
+                    <div class="form-group">
+                        <label for="addGuestName">예약자 이름</label>
+                        <input type="text" id="addGuestName" class="form-group input" placeholder="이름">
+                    </div>
+                </div>
+                <button class="btn" onclick="addTestBooking()" style="width: auto; padding: 12px 30px;">예약 추가</button>
+            </div>
+
+            <!-- 예약 목록 -->
+            <div class="booking-list">
+                <h2 style="margin-bottom: 20px; color: #333;">예약 목록</h2>
+                <div id="bookingListContainer">
+                    <!-- 예약 목록이 여기에 동적으로 추가됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+        function formatDate(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const dayName = dayNames[d.getDay()];
+            return `${year}.${month}.${day} (${dayName})`;
+        }
+
+        function loadBookings() {
+            const saved = localStorage.getItem('bookings');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        function saveBookings(bookings) {
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+        }
+
+        function displayBookings() {
+            const bookings = loadBookings();
+            const container = document.getElementById('bookingListContainer');
+
+            if (bookings.length === 0) {
+                container.innerHTML = '<div class="empty-message">등록된 예약이 없습니다.</div>';
+                return;
+            }
+
+            container.innerHTML = bookings.map((booking, index) => {
+                const start = new Date(booking.start);
+                const end = new Date(booking.end);
+                const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+                return `
+                    <div class="booking-item">
+                        <div class="booking-item-header">
+                            <div class="booking-number">${booking.bookingNumber || 'BK' + index}</div>
+                            <button class="delete-btn" onclick="deleteBooking(${index})">삭제</button>
+                        </div>
+                        <div class="booking-info">
+                            <div class="info-item">
+                                <span class="info-label">체크인</span>
+                                <span class="info-value">${formatDate(start)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">체크아웃</span>
+                                <span class="info-value">${formatDate(end)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">숙박 기간</span>
+                                <span class="info-value">${nights}박</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">예약자</span>
+                                <span class="info-value">${booking.guestName || '-'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">연락처</span>
+                                <span class="info-value">${booking.guestPhone || '-'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">이메일</span>
+                                <span class="info-value">${booking.guestEmail || '-'}</span>
+                            </div>
+                        </div>
+                        ${booking.specialRequests ? `
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e9ecef;">
+                                <span class="info-label">특별 요청사항</span>
+                                <div style="margin-top: 5px; color: #333;">${booking.specialRequests}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteBooking(index) {
+            if (confirm('정말 이 예약을 삭제하시겠습니까?')) {
+                const bookings = loadBookings();
+                bookings.splice(index, 1);
+                saveBookings(bookings);
+                displayBookings();
+            }
+        }
+
+        function addTestBooking() {
+            const checkin = document.getElementById('addCheckin').value;
+            const checkout = document.getElementById('addCheckout').value;
+            const guestName = document.getElementById('addGuestName').value;
+
+            if (!checkin || !checkout) {
+                alert('체크인과 체크아웃 날짜를 모두 선택해주세요.');
+                return;
+            }
+
+            if (new Date(checkout) <= new Date(checkin)) {
+                alert('체크아웃 날짜는 체크인 날짜보다 늦어야 합니다.');
+                return;
+            }
+
+            const bookings = loadBookings();
+            const bookingNumber = 'BK' + Date.now().toString().slice(-8);
+
+            bookings.push({
+                bookingNumber,
+                start: checkin,
+                end: checkout,
+                guestName: guestName || '테스트 예약',
+                guestPhone: '',
+                guestEmail: '',
+                specialRequests: ''
+            });
+
+            saveBookings(bookings);
+            displayBookings();
+
+            // 입력 필드 초기화
+            document.getElementById('addCheckin').value = '';
+            document.getElementById('addCheckout').value = '';
+            document.getElementById('addGuestName').value = '';
+        }
+
+        // 페이지 로드 시 예약 목록 표시
+        document.addEventListener('DOMContentLoaded', function() {
+            displayBookings();
+        });
+    </script>
+</body>
+</html>
+
